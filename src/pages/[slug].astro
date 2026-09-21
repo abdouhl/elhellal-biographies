@@ -1,0 +1,184 @@
+---
+import Layout from "../layouts/Layout.astro";
+import authors from "../data/authors.json";
+import summaries from "../data/book-summaries.json";
+import AdUnit from "../components/AdUnit.astro";
+
+export function getStaticPaths() {
+    return authors.map((author) => ({ params: { slug: author.slug }, props: { author } }));
+}
+
+const { author } = Astro.props;
+const fmt = (n: number) => String(n);
+const bookSummaries = (summaries as Record<string, { title: string; slug: string }[]>)[author.slug] ?? [];
+const quotesUrl = `https://elhellal.com/quotes/${encodeURIComponent(author.slug)}/`;
+const url = `https://biographies.elhellal.com/${author.slug}/`;
+const at = authors.findIndex((a) => a.slug === author.slug);
+const others = Array.from({ length: Math.min(4, authors.length - 1) }, (_, i) => authors[(at + 1 + i) % authors.length]);
+const wordCount = [author.summary, ...author.sections.map((s) => s.text)].join(" ").split(/\s+/).length;
+const readMinutes = Math.max(1, Math.round(wordCount / 180));
+const longForm = author.sections.length >= 4 && wordCount >= 250; // short bios get fewer ads
+const showToc = author.sections.length >= 4;
+// The in-article ad sits after the 2nd section, only on longer biographies.
+const firstSections = author.sections.slice(0, 2);
+const restSections = author.sections.slice(2);
+
+const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: author.name,
+    description: author.summary,
+    image: author.image,
+    url,
+    nationality: author.nationality,
+    birthDate: String(author.born.year),
+    birthPlace: author.born.place,
+    ...(author.died && { deathDate: String(author.died.year), deathPlace: author.died.place }),
+    jobTitle: author.roles,
+};
+const breadcrumbs = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+        { "@type": "ListItem", position: 1, name: "سير الكتّاب", item: "https://biographies.elhellal.com/" },
+        { "@type": "ListItem", position: 2, name: author.name, item: url },
+    ],
+};
+---
+
+<Layout
+    pageTitle={`${author.name} - سيرة الكاتب وأهم أعماله | الهلال`}
+    pageDescription={author.summary.slice(0, 155)}
+    canonicalUrl={url}
+    ogImage={author.image}
+    ogType="profile"
+    jsonLd={[jsonLd, breadcrumbs]}
+>
+    <main class="page">
+        <nav class="crumbs" aria-label="مسار التنقل"><a href="/">سير الكتّاب</a> / <span>{author.name}</span></nav>
+
+        <header class="hero">
+            <img src={author.image} alt={author.name} width="160" height="213" referrerpolicy="no-referrer" />
+            <div>
+                <h1>{author.name}</h1>
+                <p class="tagline">{author.tagline}</p>
+                <ul class="roles" role="list">{author.roles.map((r) => <li>{r}</li>)}</ul>
+                <p class="meta">{author.born.year}{author.died ? ` – ${author.died.year}` : ""} · {author.nationality} · قراءة {readMinutes} د</p>
+            </div>
+        </header>
+
+        <div class="layout">
+            <article>
+                <p class="lead">{author.summary}</p>
+                {firstSections.map((s, i) => (
+                    <section id={`s${i + 1}`}>
+                        <h2>{s.title}</h2>
+                        {s.text.split("\n\n").map((para) => <p>{para}</p>)}
+                    </section>
+                ))}
+                {longForm && <AdUnit slot="8525183818" format="fluid" layout="in-article" className="article-ad" />}
+                {restSections.map((s, i) => (
+                    <section id={`s${firstSections.length + i + 1}`}>
+                        <h2>{s.title}</h2>
+                        {s.text.split("\n\n").map((para) => <p>{para}</p>)}
+                    </section>
+                ))}
+            </article>
+
+            <aside>
+                {showToc && (
+                    <nav class="toc" aria-label="في هذه الصفحة">
+                        <h2 class="side-title first">في هذه الصفحة</h2>
+                        <ol>{author.sections.map((sec, i) => <li><a href={`#s${i + 1}`}>{sec.title}</a></li>)}</ol>
+                    </nav>
+                )}
+                <dl class="facts">
+                    <dt>الميلاد</dt>
+                    <dd>{fmt(author.born.year)} · {author.born.place}</dd>
+                    {author.died && (<><dt>الوفاة</dt><dd>{fmt(author.died.year)} · {author.died.place}</dd></>)}
+                    <dt>الجنسية</dt>
+                    <dd>{author.nationality}</dd>
+                </dl>
+
+                <h2 class="side-title">أهم الأعمال</h2>
+                <ul class="works" role="list">
+                    {author.works.map((w) => (
+                        <li><span>{w.title}</span>{"year" in w && <span class="year">{w.year}</span>}</li>
+                    ))}
+                </ul>
+
+                <h2 class="side-title">تابع القراءة</h2>
+                <ul class="links" role="list">
+                    <li><a href={quotesUrl} target="_blank" rel="noopener">اقتباسات {author.name} ↖</a></li>
+                    {bookSummaries.map((b) => (
+                        <li><a href={`https://books.elhellal.com/${b.slug}/`} target="_blank" rel="noopener">ملخص كتاب «{b.title}» ↖</a></li>
+                    ))}
+                </ul>
+                <AdUnit slot="2951250905" minHeight={250} className="side-ad" />
+            </aside>
+        </div>
+
+        <AdUnit slot="2951250905" className="bottom-ad" />
+
+        <section class="more">
+            <h2>كتّاب آخرون</h2>
+            <ul class="more-list" role="list">
+                {others.map((a) => (
+                    <li><a href={`/${a.slug}/`}><img src={a.image} alt="" width="48" height="64" loading="lazy" referrerpolicy="no-referrer" /><span>{a.name}</span></a></li>
+                ))}
+            </ul>
+        </section>
+    </main>
+</Layout>
+
+<style>
+    .page { max-width: 1100px; margin: 0 auto; padding: var(--spacing-08) var(--spacing-09); }
+    .crumbs { font-size: var(--desktop-caption); color: var(--content-secondary); margin-bottom: var(--spacing-06); }
+    .crumbs a { text-decoration: none; }
+    .hero { display: flex; gap: var(--spacing-07); align-items: flex-start; margin-bottom: var(--spacing-08); }
+    .hero img { flex: none; width: 160px; height: 213px; object-fit: cover; background: var(--background-secondary); border: 0.5px solid var(--border-muted); }
+    h1 { font-size: 2.2rem; margin: 0 0 var(--spacing-02); line-height: 1.25; }
+    .tagline { color: var(--content-secondary); margin: 0 0 var(--spacing-04); }
+    .meta { font-family: var(--monospace); font-size: var(--desktop-caption); color: var(--content-secondary); margin: var(--spacing-04) 0 0; }
+    .roles { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--spacing-02); }
+    .roles li { padding: 2px var(--spacing-03); border: 0.5px solid var(--border-muted); font-size: var(--desktop-caption); color: var(--content-secondary); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--spacing-09); align-items: start; }
+    .lead { font-size: 1.15rem; line-height: 2; margin: 0 0 var(--spacing-07); }
+    article section { margin-bottom: var(--spacing-07); }
+    article h2 { font-size: 1.3rem; margin: 0 0 var(--spacing-03); }
+    article section p { line-height: 2; margin: 0 0 var(--spacing-05); }
+    article section p:last-child { margin-bottom: 0; }
+    aside { border: 0.5px solid var(--border-muted); background: var(--background); padding: var(--spacing-05); }
+    .toc ol { list-style: none; margin: 0 0 var(--spacing-06); padding: 0; counter-reset: toc; }
+    .toc li { counter-increment: toc; padding: var(--spacing-01) 0; font-size: var(--desktop-body-sm); }
+    .toc li::before { content: counter(toc) "."; font-family: var(--monospace); color: var(--content-secondary); margin-inline-end: var(--spacing-02); }
+    .toc a { text-decoration: none; color: var(--content-secondary); }
+    .toc a:hover { color: var(--accent); }
+    .side-title.first { margin-top: 0; padding-top: 0; border-top: none; }
+    article section { scroll-margin-top: var(--spacing-06); }
+    .facts { margin: 0 0 var(--spacing-06); }
+    .facts dt { font-family: var(--monospace); font-size: var(--desktop-caption); color: var(--content-secondary); margin-top: var(--spacing-03); }
+    .facts dd { margin: 0; }
+    .side-title { font-size: 1rem; margin: var(--spacing-06) 0 var(--spacing-03); padding-top: var(--spacing-04); border-top: 0.5px solid var(--border-muted); }
+    .works, .links { list-style: none; margin: 0; padding: 0; }
+    .works li { display: flex; justify-content: space-between; gap: var(--spacing-03); padding: var(--spacing-02) 0; font-size: var(--desktop-body-sm); }
+    .year { font-family: var(--monospace); color: var(--content-secondary); white-space: nowrap; }
+    .links li { padding: var(--spacing-02) 0; font-size: var(--desktop-body-sm); }
+    .links a { color: var(--accent); text-decoration: none; }
+    .links a:hover { text-decoration: underline; }
+    :global(.article-ad) { margin: 0 0 var(--spacing-07); }
+    :global(.side-ad) { margin-top: var(--spacing-06); }
+    :global(.bottom-ad) { margin-top: var(--spacing-08); }
+    .more { margin-top: var(--spacing-10); }
+    .more h2 { font-size: 1.2rem; }
+    .more-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--spacing-04); }
+    .more-list a { display: flex; align-items: center; gap: var(--spacing-03); padding: var(--spacing-03); border: 0.5px solid var(--border-muted); text-decoration: none; }
+    .more-list a:hover { border-color: DarkOrange; }
+    .more-list img { object-fit: cover; }
+    @media (max-width: 48rem) {
+        .page { padding: var(--spacing-06) var(--spacing-05); }
+        .layout { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-06); }
+        .hero { flex-direction: column; }
+        h1 { font-size: 1.7rem; }
+    }
+</style>

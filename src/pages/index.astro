@@ -1,0 +1,165 @@
+---
+import Layout from "../layouts/Layout.astro";
+import AdUnit from "../components/AdUnit.astro";
+import authors from "../data/authors.json";
+
+const sorted = [...authors].sort((a, b) => a.name.localeCompare(b.name, "ar"));
+const fmt = (n: number) => n.toLocaleString("ar-EG");
+const years = (a: (typeof authors)[number]) => `${a.born.year} – ${a.died ? a.died.year : "الآن"}`;
+
+// One filter per role ("روائي", "شاعر", ...), most common first.
+const roleCounts = new Map<string, number>();
+for (const a of sorted) for (const r of a.roles) roleCounts.set(r, (roleCounts.get(r) ?? 0) + 1);
+const roles = [...roleCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ar")).slice(0, 8);
+---
+
+<Layout
+    pageTitle="سير الكتّاب العرب | الهلال"
+    pageDescription="سِيَر موجزة لأبرز الكتّاب والأدباء العرب: النشأة والمسيرة الأدبية وأهم الأعمال."
+    canonicalUrl="https://biographies.elhellal.com/"
+>
+    <main class="page">
+        <header class="intro">
+            <h1>سير الكتّاب</h1>
+            <p>من هم كتّابك المفضلون؟ حياتهم وأعمالهم الأهم في صفحة واحدة.</p>
+        </header>
+
+        <div class="toolbar">
+            <label class="search">
+                <span class="visually-hidden">ابحث عن كاتب</span>
+                <input id="q" type="search" placeholder="ابحث عن كاتب…" autocomplete="off" />
+            </label>
+            <div class="chips" role="group" aria-label="التصنيف">
+                <button class="chip" data-role="" aria-pressed="true">الكل <span class="pill">{fmt(sorted.length)}</span></button>
+                {roles.map(([r, n]) => (
+                    <button class="chip" data-role={r} aria-pressed="false">{r} <span class="pill">{fmt(n)}</span></button>
+                ))}
+            </div>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+
+        <ul class="grid" role="list" id="grid">
+            {sorted.map((a) => (
+                <li data-name={a.name} data-roles={a.roles.join("|")} data-text={`${a.tagline} ${a.nationality}`}>
+                    <a class="card" href={`/${a.slug}/`}>
+                        <img src={a.image} alt={a.name} width="96" height="128" loading="lazy" referrerpolicy="no-referrer" />
+                        <div class="card-body">
+                            <h2>{a.name}</h2>
+                            <p class="years">{years(a)} · {a.nationality}</p>
+                            <p class="tagline">{a.tagline}</p>
+                        </div>
+                    </a>
+                </li>
+            ))}
+        </ul>
+        <p id="empty" class="empty" hidden>لا توجد نتائج مطابقة. جرّب كلمة أخرى أو اختر «الكل».</p>
+        <nav id="pager" class="pager" aria-label="الصفحات"></nav>
+
+        <AdUnit slot="2951250905" className="index-ad" />
+    </main>
+
+    <script>
+        const q = document.getElementById("q") as HTMLInputElement;
+        const items = Array.from(document.querySelectorAll<HTMLLIElement>("#grid > li"));
+        const chips = Array.from(document.querySelectorAll<HTMLButtonElement>(".chip"));
+        const empty = document.getElementById("empty")!;
+        const status = document.getElementById("status")!;
+        const nf = new Intl.NumberFormat("ar-EG");
+        const grid = document.getElementById("grid")!;
+        const pager = document.getElementById("pager")!;
+        const PAGE_SIZE = 12;
+        let role = "";
+        let page = 1;
+        let matches: HTMLLIElement[] = items;
+
+        // Drop tashkeel/tatweel and unify alef/yaa/taa-marbuta so searches match loosely.
+        const norm = (s: string) =>
+            s.replace(/[ً-ٟـ]/g, "").replace(/[إأآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").toLowerCase();
+
+        function paint() {
+            const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
+            page = Math.min(page, pages);
+            const start = (page - 1) * PAGE_SIZE;
+            const visible = new Set(matches.slice(start, start + PAGE_SIZE));
+            for (const li of items) li.hidden = !visible.has(li);
+
+            pager.replaceChildren();
+            if (pages > 1) {
+                for (let p = 1; p <= pages; p++) {
+                    const b = document.createElement("button");
+                    b.textContent = nf.format(p);
+                    b.setAttribute("aria-label", `صفحة ${nf.format(p)}`);
+                    if (p === page) b.setAttribute("aria-current", "page");
+                    b.addEventListener("click", () => {
+                        page = p;
+                        paint();
+                        grid.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                    pager.appendChild(b);
+                }
+            }
+        }
+
+        // Re-filter and go back to the first page.
+        function render() {
+            const term = norm(q.value.trim());
+            matches = items.filter((li) => {
+                const okRole = !role || li.dataset.roles!.split("|").includes(role);
+                const okText = !term || norm(`${li.dataset.name} ${li.dataset.text}`).includes(term);
+                return okRole && okText;
+            });
+            page = 1;
+            empty.hidden = matches.length > 0;
+            status.textContent = term || role ? `${nf.format(matches.length)} من أصل ${nf.format(items.length)} كاتب` : "";
+            paint();
+        }
+
+        q.addEventListener("input", () => {
+            render();
+        });
+        for (const c of chips)
+            c.addEventListener("click", () => {
+                role = c.dataset.role ?? "";
+                chips.forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
+                render();
+            });
+
+        render();
+    </script>
+</Layout>
+
+<style>
+    .page { max-width: 1100px; margin: 0 auto; padding: var(--spacing-08) var(--spacing-09); }
+    .intro h1 { font-size: 2rem; margin: 0 0 var(--spacing-02); }
+    .intro p { color: var(--content-secondary); margin: 0 0 var(--spacing-07); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: var(--spacing-04); align-items: center; margin-bottom: var(--spacing-03); }
+    .search input { box-sizing: border-box; width: 260px; max-width: 100%; padding: var(--spacing-03) var(--spacing-04); border: 0.5px solid var(--border-muted); background: var(--background); color: var(--content-primary); font: inherit; font-size: var(--desktop-body-sm); outline: none; }
+    .search input:focus { border-color: DarkOrange; }
+    .chips { display: flex; flex-wrap: wrap; gap: var(--spacing-02); }
+    .chip { display: inline-flex; align-items: center; gap: var(--spacing-02); padding: var(--spacing-02) var(--spacing-04); border: 0.5px solid var(--border-muted); background: var(--background); color: var(--content-secondary); font: inherit; font-size: var(--desktop-body-sm); cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease; }
+    .chip:hover { color: var(--content-primary); }
+    .chip[aria-pressed="true"] { border-color: DarkOrange; color: DarkOrange; }
+    .chip:focus-visible { outline: 1px solid var(--button-primary); outline-offset: 2px; }
+    .pill { font-family: var(--monospace); font-size: var(--desktop-caption); opacity: 0.7; }
+    .status { font-family: var(--monospace); font-size: var(--desktop-caption); color: var(--content-secondary); min-height: 1.2em; margin: 0 0 var(--spacing-04); }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--spacing-05); }
+    .grid li[hidden] { display: none; }
+    .card { display: flex; gap: var(--spacing-05); height: 100%; box-sizing: border-box; padding: var(--spacing-05); border: 0.5px solid var(--border-muted); background: var(--background); text-decoration: none; color: inherit; transition: border-color 0.15s ease; }
+    .card:hover { border-color: DarkOrange; }
+    .card img { flex: none; width: 96px; height: 128px; object-fit: cover; background: var(--background-secondary); }
+    .card-body { min-width: 0; }
+    .card h2 { margin: 0 0 var(--spacing-01); font-size: 1.15rem; }
+    .years { font-family: var(--monospace); font-size: var(--desktop-caption); color: var(--content-secondary); margin: 0 0 var(--spacing-02); }
+    .tagline { font-size: var(--desktop-body-sm); line-height: var(--lh-desktop-body-sm); color: var(--content-secondary); margin: 0; }
+    .empty { color: var(--content-secondary); }
+    .pager { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--spacing-02); margin-top: var(--spacing-08); }
+    .pager:empty { display: none; }
+    .pager button { font-family: var(--monospace); font-size: var(--desktop-caption); min-width: var(--spacing-08); height: var(--spacing-08); cursor: pointer; color: var(--content-secondary); background: var(--background); border: 0.5px solid var(--border-muted); transition: transform 0.2s ease, color 0.15s ease; }
+    .pager button:hover { color: var(--accent); }
+    .pager button:active { transform: scale(0.97); }
+    .pager button[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
+    .pager button:focus-visible { outline: 1px solid var(--button-primary); outline-offset: 2px; }
+    :global(.index-ad) { margin-top: var(--spacing-08); }
+    @media (max-width: 30rem) { .page { padding: var(--spacing-06) var(--spacing-05); } }
+</style>

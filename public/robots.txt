@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://biographies.elhellal.com/sitemap-index.xml
