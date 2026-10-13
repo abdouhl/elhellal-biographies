@@ -11,7 +11,7 @@ export function getStaticPaths() {
 const { author } = Astro.props;
 const fmt = (n: number) => String(n);
 const bookSummaries = (summaries as Record<string, { title: string; slug: string }[]>)[author.slug] ?? [];
-const quotesUrl = `https://elhellal.com/quotes/${encodeURIComponent(author.slug)}/`;
+const quotesUrl = `https://quotes.elhellal.com/${encodeURIComponent(author.slug)}/`;
 const url = `https://biographies.elhellal.com/${author.slug}/`;
 const at = authors.findIndex((a) => a.slug === author.slug);
 const others = Array.from({ length: Math.min(4, authors.length - 1) }, (_, i) => authors[(at + 1 + i) % authors.length]);
