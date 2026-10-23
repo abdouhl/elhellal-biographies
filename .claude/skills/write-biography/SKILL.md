@@ -11,7 +11,7 @@ Accuracy matters more than length. A shorter biography with every fact sourced b
 
 ## Inputs
 
-An author name or slug. If the user gives a name, resolve the slug from `../elhellal/src/data/quotes.json` (`authors[].slug`, `name`, `image`). The slug **must match that file exactly**, because the page links to `https://elhellal.com/quotes/<slug>/`. If the author isn't in `quotes.json`, tell the user and stop; don't invent a slug.
+An author name or slug. If the user gives a name, resolve the slug from `../elhellal-quotes/src/data/quotes.json` (`authors[].slug`, `name`, `image`). The slug **must match that file exactly**, because the page links to `https://elhellal.com/quotes/<slug>/`. If the author isn't in `quotes.json`, tell the user and stop; don't invent a slug.
 
 If an entry already exists in `authors.json`, this is a rewrite: keep `slug`, `image`, and any facts you can re-verify, and replace the rest.
 

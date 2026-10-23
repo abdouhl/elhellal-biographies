@@ -11,9 +11,9 @@ type Author = {
 
 const read = (rel: string) => JSON.parse(readFileSync(new URL(rel, import.meta.url), "utf8"));
 const authors: Author[] = read("../src/data/authors.json");
-const quotesPath = new URL("../../elhellal/src/data/quotes.json", import.meta.url);
+const quotesPath = new URL("../../elhellal-quotes/src/data/quotes.json", import.meta.url);
 const quoteSlugs = existsSync(quotesPath)
-  ? new Set<string>(read("../../elhellal/src/data/quotes.json").authors.map((a: { slug: string }) => a.slug))
+  ? new Set<string>(read("../../elhellal-quotes/src/data/quotes.json").authors.map((a: { slug: string }) => a.slug))
   : null;
 
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import authors from "../data/authors.json";
 import summaries from "../data/book-summaries.json";
 import AdUnit from "../components/AdUnit.astro";
+import ElhellalArticles from "../components/ElhellalArticles.astro";
 
 export function getStaticPaths() {
     return authors.map((author) => ({ params: { slug: author.slug }, props: { author } }));
@@ -119,6 +120,8 @@ const breadcrumbs = {
         </div>
 
         <AdUnit slot="2951250905" className="bottom-ad" />
+
+        <ElhellalArticles url={url} heading={`مقالات عن ${author.name} على الهلال`} />
 
         <section class="more">
             <h2>كتّاب آخرون</h2>
