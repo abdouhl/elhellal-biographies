@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 
 type Author = {
   slug: string; name: string; image: string; tagline: string;
-  born: { year: number; place: string }; died: { year: number; place: string } | null;
+  born: { year: number; place: string } | null; died: { year: number; place: string } | null;
   nationality: string; roles: string[]; summary: string;
   sections: { title: string; text: string }[]; works: { title: string; year?: number | string }[];
 };
@@ -26,9 +26,10 @@ for (const a of list) {
   const errs: string[] = [], warns: string[] = [];
   for (const k of ["slug", "name", "image", "tagline", "nationality", "summary"] as const)
     if (!a[k]?.trim()) errs.push(`missing ${k}`);
-  if (!Number.isInteger(a.born?.year) || !a.born?.place) errs.push("born needs year and place");
+  if (a.born === null) warns.push("born is null (birth year and place unknown in sources)");
+  else if (!Number.isInteger(a.born?.year) || !a.born?.place) errs.push("born must be null or {year, place}");
   if (a.died !== null && (!Number.isInteger(a.died?.year) || !a.died?.place)) errs.push("died must be null or {year, place}");
-  if (a.died && a.died.year < a.born.year) errs.push("died before born");
+  if (a.died && a.born && a.died.year < a.born.year) errs.push("died before born");
   if (!a.roles?.length) errs.push("roles is empty");
   if (authors.filter((b) => b.slug === a.slug).length > 1) errs.push("duplicate slug");
   if (quoteSlugs && !quoteSlugs.has(a.slug)) errs.push("slug not found in elhellal quotes.json");

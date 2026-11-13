@@ -34,7 +34,7 @@ Authors live in `src/data/authors.json` (each becomes `/<slug>/`). Entry shape:
 }
 ```
 
-`died` is `null` for living authors; `year` on a work is optional (omit when unsure — don't guess).
+`died` is `null` for living authors; `born` may be `null` when no source gives a birth year and place (the page then hides the birth row); `year` on a work is optional (omit when unsure — don't guess).
 
 Sections can hold several paragraphs, separated by a blank line (`\n\n`) inside `text`.
 

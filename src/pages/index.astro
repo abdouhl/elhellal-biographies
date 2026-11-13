@@ -5,7 +5,8 @@ import authors from "../data/authors.json";
 
 const sorted = [...authors].sort((a, b) => a.name.localeCompare(b.name, "ar"));
 const fmt = (n: number) => n.toLocaleString("ar-EG");
-const years = (a: (typeof authors)[number]) => `${a.born.year} – ${a.died ? a.died.year : "الآن"}`;
+const years = (a: (typeof authors)[number]) =>
+    a.born ? `${a.born.year} – ${a.died ? a.died.year : "الآن"}` : a.died ? `ت. ${a.died.year}` : "";
 
 // One filter per role ("روائي", "شاعر", ...), most common first.
 const roleCounts = new Map<string, number>();
@@ -15,7 +16,7 @@ const roles = [...roleCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b
 
 <Layout
     pageTitle="سير الكتّاب العرب | الهلال"
-    pageDescription="سِيَر موجزة لأبرز الكتّاب والأدباء العرب: النشأة والمسيرة الأدبية وأهم الأعمال."
+    pageDescription="سِيَر موجزة بالعربية لأبرز الكتّاب والأدباء والمفكرين: النشأة والمسيرة الأدبية وأهم الأعمال والأقوال، مع روابط لملخصات كتبهم واقتباساتهم على الهلال."
     canonicalUrl="https://biographies.elhellal.com/"
 >
     <main class="page">
@@ -45,7 +46,7 @@ const roles = [...roleCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b
                         <img src={a.image} alt={a.name} width="96" height="128" loading="lazy" referrerpolicy="no-referrer" />
                         <div class="card-body">
                             <h2>{a.name}</h2>
-                            <p class="years">{years(a)} · {a.nationality}</p>
+                            <p class="years">{[years(a), a.nationality].filter(Boolean).join(" · ")}</p>
                             <p class="tagline">{a.tagline}</p>
                         </div>
                     </a>
@@ -55,7 +56,7 @@ const roles = [...roleCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b
         <p id="empty" class="empty" hidden>لا توجد نتائج مطابقة. جرّب كلمة أخرى أو اختر «الكل».</p>
         <nav id="pager" class="pager" aria-label="الصفحات"></nav>
 
-        <AdUnit slot="2951250905" className="index-ad" />
+        <AdUnit slot="2951250905" mobileMinHeight={280} className="index-ad" />
     </main>
 
     <script>
@@ -161,5 +162,7 @@ const roles = [...roleCounts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b
     .pager button[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
     .pager button:focus-visible { outline: 1px solid var(--button-primary); outline-offset: 2px; }
     :global(.index-ad) { margin-top: var(--spacing-08); }
+    /* No ad on a "no results" screen. */
+    #empty:not([hidden]) ~ :global(.index-ad) { display: none; }
     @media (max-width: 30rem) { .page { padding: var(--spacing-06) var(--spacing-05); } }
 </style>

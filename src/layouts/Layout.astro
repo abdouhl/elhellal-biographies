@@ -29,6 +29,7 @@ const ticker = authors.slice(-12).reverse();
 <html lang="ar" dir="rtl" data-new-ui-theme="dark">
 <head>
     <meta charset="UTF-8" />
+    <meta name="Petal-Search-site-verification" content="9fc8e9078d" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
@@ -203,6 +204,10 @@ const ticker = authors.slice(-12).reverse();
         <button type="button" aria-label="إغلاق">×</button>
     </aside>
     <style is:global>
+        /* Never cover an Auto ads anchor (policy): sit above it while one is showing. */
+        html:has(ins.adsbygoogle[data-anchor-status="displayed"]) .hellal-app-cta:not([hidden]) {
+            bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
+        }
         .hellal-app-cta:not([hidden]) {
             position: fixed;
             z-index: 1000;

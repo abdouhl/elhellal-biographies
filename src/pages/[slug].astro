@@ -23,6 +23,13 @@ const showToc = author.sections.length >= 4;
 // The in-article ad sits after the 2nd section, only on longer biographies.
 const firstSections = author.sections.slice(0, 2);
 const restSections = author.sections.slice(2);
+// Long reads (7+ sections, 900+ words) get a second in-article unit after section 5.
+const secondAdAfter = author.sections.length >= 7 && wordCount >= 900 ? 5 : 0;
+// Stub biographies keep only the bottom ad, so there is never more ad than content.
+const thin = wordCount < 200;
+// Sections after the second ad; restSections stops there when it shows.
+const lateSections = secondAdAfter ? author.sections.slice(secondAdAfter) : [];
+if (secondAdAfter) restSections.splice(secondAdAfter - firstSections.length);
 
 const jsonLd = {
     "@context": "https://schema.org",
@@ -32,8 +39,7 @@ const jsonLd = {
     image: author.image,
     url,
     nationality: author.nationality,
-    birthDate: String(author.born.year),
-    birthPlace: author.born.place,
+    ...(author.born && { birthDate: String(author.born.year), birthPlace: author.born.place }),
     ...(author.died && { deathDate: String(author.died.year), deathPlace: author.died.place }),
     jobTitle: author.roles,
 };
@@ -64,7 +70,7 @@ const breadcrumbs = {
                 <h1>{author.name}</h1>
                 <p class="tagline">{author.tagline}</p>
                 <ul class="roles" role="list">{author.roles.map((r) => <li>{r}</li>)}</ul>
-                <p class="meta">{author.born.year}{author.died ? ` – ${author.died.year}` : ""} · {author.nationality} · قراءة {readMinutes} د</p>
+                <p class="meta">{[author.born ? `${author.born.year}${author.died ? ` – ${author.died.year}` : ""}` : author.died ? `ت. ${author.died.year}` : "", author.nationality, `قراءة ${readMinutes} د`].filter(Boolean).join(" · ")}</p>
             </div>
         </header>
 
@@ -84,6 +90,13 @@ const breadcrumbs = {
                         {s.text.split("\n\n").map((para) => <p>{para}</p>)}
                     </section>
                 ))}
+                {secondAdAfter > 0 && <AdUnit slot="8909579541" format="fluid" layout="in-article" className="article-ad" />}
+                {lateSections.map((s, i) => (
+                    <section id={`s${secondAdAfter + i + 1}`}>
+                        <h2>{s.title}</h2>
+                        {s.text.split("\n\n").map((para) => <p>{para}</p>)}
+                    </section>
+                ))}
             </article>
 
             <aside>
@@ -94,8 +107,7 @@ const breadcrumbs = {
                     </nav>
                 )}
                 <dl class="facts">
-                    <dt>الميلاد</dt>
-                    <dd>{fmt(author.born.year)} · {author.born.place}</dd>
+                    {author.born && (<><dt>الميلاد</dt><dd>{fmt(author.born.year)} · {author.born.place}</dd></>)}
                     {author.died && (<><dt>الوفاة</dt><dd>{fmt(author.died.year)} · {author.died.place}</dd></>)}
                     <dt>الجنسية</dt>
                     <dd>{author.nationality}</dd>
@@ -115,11 +127,11 @@ const breadcrumbs = {
                         <li><a href={`https://books.elhellal.com/${b.slug}/`} target="_blank" rel="noopener">ملخص كتاب «{b.title}» ↖</a></li>
                     ))}
                 </ul>
-                <AdUnit slot="2951250905" minHeight={250} className="side-ad" />
+                {!thin && <AdUnit slot="2951250905" minHeight={250} className="side-ad" />}
             </aside>
         </div>
 
-        <AdUnit slot="2951250905" className="bottom-ad" />
+        <AdUnit slot="2951250905" mobileMinHeight={280} className="bottom-ad" />
 
         <ElhellalArticles url={url} heading={`مقالات عن ${author.name} على الهلال`} />
 
@@ -170,8 +182,9 @@ const breadcrumbs = {
     .links a { color: var(--accent); text-decoration: none; }
     .links a:hover { text-decoration: underline; }
     :global(.article-ad) { margin: 0 0 var(--spacing-07); }
-    :global(.side-ad) { margin-top: var(--spacing-06); }
-    :global(.bottom-ad) { margin-top: var(--spacing-08); }
+    /* Bleed through the aside's padding so a 300x250 fits the 320px column. */
+    :global(.side-ad) { margin-top: var(--spacing-06); margin-inline: calc(var(--spacing-05) * -1); }
+    :global(.bottom-ad) { margin-block: var(--spacing-08); }
     .more { margin-top: var(--spacing-10); }
     .more h2 { font-size: 1.2rem; }
     .more-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--spacing-04); }
