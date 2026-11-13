@@ -192,6 +192,9 @@ const breadcrumbs = {
     .more-list a:hover { border-color: DarkOrange; }
     .more-list img { object-fit: cover; }
     @media (max-width: 48rem) {
+        /* The aside drops under the article here, so the side ad would sit right on top
+           of the bottom ad (and under the links): one ad there is enough. */
+        aside :global(.side-ad) { display: none; }
         .page { padding: var(--spacing-06) var(--spacing-05); }
         .layout { grid-template-columns: minmax(0, 1fr); gap: var(--spacing-06); }
         .hero { flex-direction: column; }
